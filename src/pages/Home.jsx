@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { getCompassHeading, loadTouristPlaces, updateTouristPlaces } from "../utils/compassHeading";
+import { logger } from "../utils/logger";
 
 const Home = () => {
   const [error, setError] = useState("");
@@ -10,15 +11,29 @@ const Home = () => {
 
   const handleCompassClick = async () => {
     setIsLoading(true);
+    logger.log('Fetching places within', kmValue, 'km');
     
-    let data = await loadTouristPlaces(kmValue, setIsLoading);
-    const heading = await getCompassHeading();
-    if (heading != null) {
-      data = await updateTouristPlaces(heading, data);
-      setVisiblePlaces(data);
-      setStatus("Places loaded successfully.");
+    try {
+      let data = await loadTouristPlaces(kmValue, setIsLoading);
+      logger.log('Places loaded:', data);
+      
+      const heading = await getCompassHeading();
+      logger.log('Compass heading:', heading);
+      
+      if (heading != null) {
+        data = await updateTouristPlaces(heading, data);
+        setVisiblePlaces(data);
+        setStatus("Places loaded successfully.");
+        logger.log('Updated places based on heading:', data);
+      } else {
+        logger.error('Failed to get compass heading');
+      }
+    } catch (err) {
+      logger.error('Error fetching places:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
